@@ -12,13 +12,12 @@
  * IN4 -> CNY70 delantero izquierdo
  * IN5 -> bumper izquierdo
  * IN6 -> configurable
- * SRF02_FW -> SRF02 frontal
+ * SRF02_FW -> SRF02 frontal // dejo de funcionar
  * SRF02_LW -> SRF02 izquierdo
  * SRF02_RW -> SRF02 derecho
  *
  */
 
-// Infrarj detrasÃ¯Â¿Â½? derÃ¯Â¿Â½?
 
 
 #define SRF02_RW 0xE2
@@ -27,14 +26,14 @@
 
 int16 duracion=0;
 int frente=0, der=0, izq=0;
-int pwm=180;int pwm2=128;
+int pwm=230;int pwm2=128;
 int wx=0;int wx2=0;
 int var=0;
 int choque=0;
 int salir_e=0;
 int no_salir=0;
 int cont=0;
-enum state {idle, explorar, maniobra, salir, acercarse, acercarse_izq, acercarse_der, empujar, empujar_der, empujar_izq}actual = explorar;
+enum state {idle, explorar, maniobra, salir, acercarse, acercarse_izq, acercarse_der, empujar, empujar_der, empujar_izq}actual = idle;
 
 
 #INT_TIMER0
@@ -44,8 +43,12 @@ void int_tmr0() {
    {
       switch(actual){
          case idle:
-            M1_P();
-            M2_P();
+            // wait 3s
+            if(duracion<275)
+            {
+               M1_P();
+               M2_P();
+            }else{actual=explorar;}
             break;
 
         case maniobra:
@@ -142,7 +145,6 @@ void int_tmr0() {
 
    wx++;
    if (wx == 255) {duracion++;}
-   //if(duracion > 10000) led_on();
 }
 
 void main()
@@ -158,7 +160,7 @@ void main()
    enable_interrupts(GLOBAL);
    while(!P2)
    {
-     // si empuja fuera del tatami a rival, para poder volver pasando sobre la linea negra con sensores delanteros
+     //si empuja fuera del tatami a rival, para poder volver pasando sobre la linea negra con sensores delanteros
      //if(actual == salir)  while((!IN3 || !IN4));
      // si al maniobrar pisa linea negra con sensores traseros
      /*while ((!IN2) && actual == maniobra)
@@ -174,8 +176,7 @@ void main()
          salir_e = 1;
 
          //no_salir++;
-         //led_on();
-      }//else led_off();*/
+      }*/
 
       
       if((!IN3 || !IN4) && (actual == explorar || actual == maniobra || actual == acercarse || actual == empujar || actual == empujar_der || actual == empujar_izq))
@@ -185,7 +186,9 @@ void main()
          actual = maniobra;
       }
       
-      if ((!IN2) && (actual == explorar || actual == maniobra))
+      // si por un casual detecta negro detras, se saltaria la linea delante
+      // es necesario para maniobrar y que no se salga
+      if ((!IN2) && (actual == maniobra))
       {
          duracion = 0;
          actual = explorar;
