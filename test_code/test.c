@@ -18,7 +18,7 @@
  *
  */
 
-// Infrarj detrasï¿½? derï¿½?
+// Infrarj detrasÃ¯Â¿Â½? derÃ¯Â¿Â½?
 
 
 #define SRF02_RW 0xE2
@@ -27,14 +27,14 @@
 
 int16 duracion=0;
 int frente=0, der=0, izq=0;
-int pwm=150;int pwm2=128;
+int pwm=180;int pwm2=128;
 int wx=0;int wx2=0;
 int var=0;
 int choque=0;
 int salir_e=0;
 int no_salir=0;
 int cont=0;
-enum state {idle, explorar, maniobra, salir, acercarse, acercarse_izq, acercarse_der, empujar, empujar_der, empujar_izq}actual = idle;
+enum state {idle, explorar, maniobra, salir, acercarse, acercarse_izq, acercarse_der, empujar, empujar_der, empujar_izq}actual = explorar;
 
 
 #INT_TIMER0
@@ -49,13 +49,13 @@ void int_tmr0() {
             break;
 
         case maniobra:
-            if(duracion < 100)
+            if(duracion < 50)  // 100
             {
                M1_A();
                M2_A();
             }else
             {
-               if(duracion < 160) // last 200
+               if(duracion < 150) // last 160
                {
                   M1_A();
                   M2_H();
@@ -85,19 +85,19 @@ void int_tmr0() {
             break;
 
         case acercarse_izq:
-            if(duracion < 100)
+            if(duracion < 65)
             {
                M1_H();
                M2_A();
-            }else{actual = acercarse;pwm=200;}
+            }else{actual = explorar;pwm=200;}
             break;
 
         case acercarse_der:
-            if(duracion < 100)
+            if(duracion < 65)
             {
                M1_A();
                M2_H();
-            }else{actual = acercarse;pwm=200;}
+            }else{actual = explorar;pwm=200;}
             break;
 
         case empujar:
@@ -124,7 +124,7 @@ void int_tmr0() {
       M2_P();
    }
 
-   if(actual == salir)
+   /*if(actual == salir)
    {
      if(wx2 <= pwm2)
      {
@@ -138,7 +138,7 @@ void int_tmr0() {
        M2_P();
      }
      wx2++;
- }
+ }*/
 
    wx++;
    if (wx == 255) {duracion++;}
@@ -154,7 +154,6 @@ void main()
    set_tris_d(0x1F);
    set_tris_e(0x00);
    setup_timer_0(RTCC_INTERNAL| RTCC_DIV_2 |RTCC_8_BIT);
-   actual=explorar;
    enable_interrupts(INT_TIMER0);
    enable_interrupts(GLOBAL);
    while(!P2)
@@ -177,34 +176,19 @@ void main()
          //no_salir++;
          //led_on();
       }//else led_off();*/
+
       
-      if(!IN2 && (actual == actual == empujar || actual == empujar_der || actual == empujar_izq))
-      {
-        duracion = 0;
-        // pwm2 -> motor izquierdo
-        // pwm -> motor derecho
-        actual = salir;
-        pwm = 20;
-        pwm2 = 200;
-      }
-
-      if((!IN3 || !IN4) && (actual == empujar || actual == empujar_der || actual == empujar_izq))
-      {
-         //var++;
-         //pwm=100;
-         salir_e = 1;
-         //while(!IN3 || !IN4);
-         duracion = 0;
-         actual = maniobra;
-         //pwm=255;
-      }
-
-
-      if((!IN3 || !IN4) && (actual == explorar || actual == maniobra || actual == acercarse))
+      if((!IN3 || !IN4) && (actual == explorar || actual == maniobra || actual == acercarse || actual == empujar || actual == empujar_der || actual == empujar_izq))
       {
          //var++;
          duracion = 0;
          actual = maniobra;
+      }
+      
+      if ((!IN2) && (actual == explorar || actual == maniobra))
+      {
+         duracion = 0;
+         actual = explorar;
       }
 
       if((IN5 || IN1) && !salir_e) {
@@ -217,7 +201,7 @@ void main()
          pwm = 230;
       }
 
-      if( (actual == explorar || actual == maniobra || actual == idle) )
+      if( (actual == explorar || actual == maniobra) )
       {
          //frente = srf_measure_cm(SRF02_FW);
          der = srf_measure_cm(SRF02_RW);
@@ -234,9 +218,9 @@ void main()
                  pwm = 230;
                 }
       }
-    
-      if(!IN5 && !IN1 && choque) {choque = 0;duracion = 0;pwm = 128;actual=explorar;}
-      if(!IN5 && !IN1 && salir_e) {salir_e = 0;}
+
+      //if(!IN5 && !IN1 && choque) {choque = 0;duracion = 0;pwm = 128;actual=explorar;}
+      //if(!IN5 && !IN1 && salir_e) {salir_e = 0;}
    }
 
 }
